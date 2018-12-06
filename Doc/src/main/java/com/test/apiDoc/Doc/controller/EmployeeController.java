@@ -2,9 +2,12 @@ package com.test.apiDoc.Doc.controller;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
+import javax.annotation.PostConstruct;
 import javax.validation.Valid;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,27 +28,37 @@ public class EmployeeController {
 
 	public static List<Employee> employeeList = new ArrayList<Employee>();
 
-	@ApiOperation(value = "View a list of available employees", response = List.class)
-	@GetMapping("/employees")
-	public List<Employee> getAllEmployees() {
-
+	@PostConstruct
+	public void createEmplooyeList() {
 		for (int i = 0; i < 5; i++) {
 			Employee employee = new Employee(i, "Dummy" + i, "Data", "mailNotFound" + i + "@gmail.com");
 			employeeList.add(employee);
 		}
+	}
 
+	@ApiOperation(value = "View a list of available employees", response = List.class, consumes = "Nothing")
+	@GetMapping("/employees")
+	public List<Employee> getAllEmployees() {
 		return employeeList;
 
 	}
 
-	@ApiOperation(value = "Find a particular employee By Id", response = ResponseEntity.class)
+	@ApiOperation(value = "Find a particular employee By Id", response = ResponseEntity.class, consumes = "Integer Type employee Id")
 	@GetMapping("/employees/{id}")
-	public ResponseEntity<Employee> getEmployeeById(@PathVariable(value = "id") Long employeeId) {
-		Employee employee = (Employee) employeeList.stream().filter(emp -> emp.getId() == employeeId);
-		return ResponseEntity.ok().body(employee);
+	@Cacheable("findById")
+	public ResponseEntity<Employee> getEmployeeById(@PathVariable(value = "id") int employeeId) {
+
+		Optional<Employee> employee = employeeList.stream().filter(emp -> emp.getId() == employeeId).findFirst();
+		if (employee.isPresent()) {
+			Employee emp = employee.get();
+			return ResponseEntity.ok().body(emp);
+		} else {
+			return null;
+		}
+
 	}
 
-	@ApiOperation(value = "create new Employee", response = String.class)
+	@ApiOperation(value = "create new Employee", response = String.class, consumes = "Expected Employee object")
 	@PostMapping("/employees")
 	public String createEmployee(@Valid @RequestBody Employee employee) {
 		employeeList.add(employee);
