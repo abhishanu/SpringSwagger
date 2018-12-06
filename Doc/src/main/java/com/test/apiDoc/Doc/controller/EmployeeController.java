@@ -7,6 +7,7 @@ import java.util.Optional;
 import javax.annotation.PostConstruct;
 import javax.validation.Valid;
 
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,11 +46,12 @@ public class EmployeeController {
 
 	@ApiOperation(value = "Find a particular employee By Id", response = ResponseEntity.class, consumes = "Integer Type employee Id")
 	@GetMapping("/employees/{id}")
-	@Cacheable("findById")
+	@Cacheable(cacheNames="findById",key="{#id}")
 	public ResponseEntity<Employee> getEmployeeById(@PathVariable(value = "id") int employeeId) {
 
 		Optional<Employee> employee = employeeList.stream().filter(emp -> emp.getId() == employeeId).findFirst();
 		if (employee.isPresent()) {
+			System.out.println("Getting response from filteration.....");
 			Employee emp = employee.get();
 			return ResponseEntity.ok().body(emp);
 		} else {
@@ -64,5 +66,10 @@ public class EmployeeController {
 		employeeList.add(employee);
 		return "New Employee added";
 	}
+	
+	@GetMapping("/clearCache")
+	//To clear cache by concurrentHashMap Id
+	@CacheEvict(cacheNames="findById",allEntries=true)
+	public void clearCatche() {}
 
 }
